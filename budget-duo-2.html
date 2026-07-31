@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Бюджет на двоих</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink:#0F1B2D;
+  --card:#1B2A42;
+  --card-hi:#233658;
+  --paper:#EDE6D6;
+  --mint:#5FD9A4;
+  --coral:#FF7A6B;
+  --gold:#E8B84B;
+  --person-a:#4FC8D9;
+  --person-b:#B48CE8;
+  --text-hi:#F3F1EA;
+  --text-mid:#9FADC7;
+  --text-dim:#5E6C87;
+  --line: rgba(159,173,199,0.14);
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  background: var(--ink);
+  color: var(--text-hi);
+  font-family:'Inter',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+}
+
+#app{
+  width:100%;
+  max-width:460px;
+  min-height:100vh;
+  padding: max(20px, env(safe-area-inset-top)) 16px calc(24px + env(safe-area-inset-bottom));
+  position:relative;
+}
+
+.hidden{display:none !important;}
+
+/* ---------- ONBOARDING ---------- */
+#onboard{
+  min-height:calc(100vh - 44px);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:22px;
+}
+.brand-eyebrow{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:12px;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color: var(--gold);
+}
+.brand-title{
+  font-family:'Fraunces', serif;
+  font-size:34px;
+  font-weight:600;
+  line-height:1.15;
+  color: var(--text-hi);
+}
+.brand-sub{
+  color: var(--text-mid);
+  font-size:14.5px;
+  line-height:1.5;
+  max-width:34ch;
+}
+
+.field{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.field label{
+  font-size:12.5px;
+  color: var(--text-mid);
+  font-weight:500;
+}
+.field input{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 14px;
+  color: var(--text-hi);
+  font-family:'Inter',sans-serif;
+  font-size:15px;
+  outline:none;
+  transition: border-color .15s ease;
+}
+.field input:focus{ border-color: var(--gold); }
+.field input::placeholder{ color: var(--text-dim); }
+
+.room-row{ display:flex; gap:10px; }
+.room-row input{ flex:1; text-transform:uppercase; letter-spacing:0.08em; font-family:'IBM Plex Mono',monospace; }
+.btn-generate{
+  flex-shrink:0;
+  background: var(--card-hi);
+  border:1px solid var(--line);
+  border-radius:12px;
+  color: var(--text-mid);
+  font-size:13px;
+  padding:0 14px;
+  cursor:pointer;
+}
+.btn-generate:active{ transform: scale(0.97); }
+
+.btn-primary{
+  background: var(--gold);
+  color: #24190A;
+  border:none;
+  border-radius:14px;
+  padding:15px;
+  font-size:15.5px;
+  font-weight:600;
+  cursor:pointer;
+  font-family:'Inter',sans-serif;
+  transition: transform .1s ease, opacity .15s ease;
+}
+.btn-primary:active{ transform: scale(0.98); }
+.btn-primary:disabled{ opacity:0.4; }
+
+.onboard-hint{
+  font-size:12.5px;
+  color: var(--text-dim);
+  line-height:1.5;
+}
+.onboard-hint b{ color: var(--text-mid); }
+
+/* ---------- MAIN APP ---------- */
+#main{ display:flex; flex-direction:column; gap:18px; }
+
+.topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding-bottom:2px;
+}
+.topbar-room{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.topbar-room .label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color: var(--text-dim);
+}
+.topbar-room .code{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:14px;
+  color: var(--gold);
+  letter-spacing:0.06em;
+}
+.topbar-people{ display:flex; gap:6px; }
+.person-chip{
+  display:flex; align-items:center; gap:5px;
+  background: var(--card);
+  border-radius:20px;
+  padding:5px 10px 5px 6px;
+  font-size:11.5px;
+  color: var(--text-mid);
+}
+.dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* HERO / jar */
+.hero{
+  background: linear-gradient(165deg, var(--card-hi), var(--card));
+  border:1px solid var(--line);
+  border-radius:22px;
+  padding:22px 20px 20px;
+  position:relative;
+  overflow:hidden;
+}
+.hero-label{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color: var(--text-mid);
+}
+.hero-balance{
+  font-family:'Fraunces', serif;
+  font-size:42px;
+  font-weight:600;
+  margin-top:6px;
+  letter-spacing:-0.01em;
+}
+.hero-balance sup{ font-size:20px; font-weight:500; color: var(--text-mid); margin-left:2px;}
+
+.jar-wrap{ margin-top:18px; }
+.jar-top{
+  display:flex; justify-content:space-between; align-items:baseline;
+  margin-bottom:8px;
+}
+.jar-title{ font-size:12.5px; color: var(--text-mid); }
+.jar-goal-edit{
+  font-size:12px; color: var(--gold); background:none; border:none; cursor:pointer; font-family:'Inter',sans-serif; text-decoration:underline; text-underline-offset:2px;
+}
+.jar-track{
+  height:14px;
+  border-radius:8px;
+  background: rgba(255,255,255,0.06);
+  overflow:hidden;
+  display:flex;
+  position:relative;
+}
+.jar-fill-a, .jar-fill-b{
+  height:100%;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+}
+.jar-fill-a{ background: var(--person-a); }
+.jar-fill-b{ background: var(--person-b); }
+.jar-caption{
+  margin-top:8px;
+  font-size:11.5px;
+  color: var(--text-dim);
+  display:flex; justify-content:space-between;
+  font-family:'IBM Plex Mono', monospace;
+}
+
+/* quick actions */
+.actions{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; }
+.action-btn{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:13px 6px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  cursor:pointer;
+  color: var(--text-hi);
+  font-size:12.5px;
+  font-weight:500;
+  transition: transform .1s ease, border-color .15s ease;
+}
+.action-btn:active{ transform: scale(0.96); }
+.action-btn .icon{ font-size:18px; }
+.action-btn.income{ border-color: rgba(95,217,164,0.35); }
+.action-btn.expense{ border-color: rgba(255,122,107,0.35); }
+.action-btn.saving{ border-color: rgba(232,184,75,0.35); }
+
+/* month nav */
+.month-nav{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:6px 6px;
+}
+.month-nav-btn{
+  width:34px; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:10px;
+  background:none;
+  border:none;
+  color: var(--text-mid);
+  font-size:16px;
+  cursor:pointer;
+  transition: background .12s ease, color .12s ease;
+}
+.month-nav-btn:active{ background: var(--card-hi); }
+.month-nav-btn:disabled{ opacity:0.25; cursor:default; }
+.month-label-wrap{
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+}
+.month-label{
+  font-family:'Fraunces', serif;
+  font-size:15px;
+  font-weight:600;
+  text-transform:capitalize;
+}
+.month-sub{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:10.5px;
+  color: var(--text-dim);
+}
+.month-today-btn{
+  font-size:11px;
+  color: var(--gold);
+  background:none;
+  border:none;
+  cursor:pointer;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+/* stats row */
+.stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat-card{
+  background: var(--card);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px 14px;
+}
+.stat-card .n{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:16px;
+  font-weight:600;
+}
+.stat-card .l{ font-size:11px; color: var(--text-dim); margin-top:2px; }
+.stat-card.income .n{ color: var(--mint); }
+.stat-card.expense .n{ color: var(--coral); }
+
+/* ledger / receipt tape */
+.ledger-head{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:4px;
+}
+.ledger-title{
+  font-family:'Fraunces', serif;
+  font-size:18px;
+  font-weight:600;
+}
+.ledger-count{ font-size:12px; color: var(--text-dim); }
+
+.ledger{
+  background: var(--paper);
+  border-radius:16px;
+  padding:6px 4px 10px;
+  position:relative;
+}
+.ledger::before{
+  content:"";
+  display:block;
+  height:10px;
+  background-image: radial-gradient(circle, var(--ink) 3.5px, transparent 3.6px);
+  background-size: 16px 10px;
+  background-position: top center;
+  background-repeat: repeat-x;
+  margin-bottom:4px;
+}
+.entry{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-bottom:1px dashed rgba(15,27,45,0.18);
+  cursor:pointer;
+  transition: background .12s ease;
+}
+.entry:active{ background: rgba(15,27,45,0.06); }
+.entry:last-child{ border-bottom:none; }
+.entry-edit-hint{
+  color:#9A9078;
+  font-size:14px;
+  flex-shrink:0;
+}
+.entry-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.entry-main{ flex:1; min-width:0; }
+.entry-cat{
+  color:#1A1408;
+  font-size:13.5px;
+  font-weight:600;
+}
+.entry-meta{
+  color:#6B6350;
+  font-size:11px;
+  margin-top:1px;
+  font-family:'IBM Plex Mono', monospace;
+}
+.entry-amount{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:14px;
+  font-weight:600;
+  white-space:nowrap;
+}
+.entry-amount.income{ color:#1E8F5E; }
+.entry-amount.expense{ color:#C23B2C; }
+.entry-amount.saving{ color:#9A7412; }
+
+.empty-state{
+  text-align:center;
+  padding:34px 20px;
+  color:#8A806A;
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* modal */
+#overlay{
+  position:fixed; inset:0;
+  background: rgba(6,10,18,0.72);
+  backdrop-filter: blur(2px);
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  z-index:50;
+}
+#sheet{
+  width:100%;
+  max-width:460px;
+  background: var(--card);
+  border-radius:22px 22px 0 0;
+  padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  animation: slideUp .25s ease;
+  border-top:1px solid var(--line);
+}
+@keyframes slideUp{ from{ transform: translateY(24px); opacity:0; } to{ transform:none; opacity:1; } }
+.sheet-title{ font-family:'Fraunces',serif; font-size:19px; font-weight:600; }
+.amount-input-wrap{
+  display:flex; align-items:baseline; gap:6px;
+  background: var(--ink);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px 16px;
+}
+.amount-input-wrap span{ font-size:18px; color: var(--text-dim); font-family:'IBM Plex Mono',monospace; }
+#amountInput{
+  flex:1; background:none; border:none; outline:none;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:24px; color: var(--text-hi);
+  min-width:0;
+}
+.chip-row{ display:flex; gap:8px; flex-wrap:wrap; }
+.chip{
+  background: var(--ink);
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:8px 13px;
+  font-size:12.5px;
+  color: var(--text-mid);
+  cursor:pointer;
+}
+.chip.active{ background: var(--gold); color:#24190A; border-color:var(--gold); font-weight:600; }
+#noteInput{
+  background: var(--ink);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px 14px;
+  color: var(--text-hi);
+  font-family:'Inter',sans-serif;
+  font-size:14px;
+  outline:none;
+}
+.sheet-actions{ display:flex; gap:10px; margin-top:2px; }
+.btn-secondary{
+  flex:1;
+  background:none;
+  border:1px solid var(--line);
+  color: var(--text-mid);
+  border-radius:14px;
+  padding:14px;
+  font-size:14.5px;
+  cursor:pointer;
+}
+.sheet-actions .btn-primary{ flex:2; }
+
+.toast{
+  position:fixed;
+  bottom:24px; left:50%;
+  transform:translateX(-50%);
+  background: var(--card-hi);
+  border:1px solid var(--line);
+  color: var(--text-hi);
+  padding:11px 18px;
+  border-radius:12px;
+  font-size:13px;
+  z-index:80;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+.footer-note{
+  text-align:center;
+  color: var(--text-dim);
+  font-size:11px;
+  padding-top:6px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ONBOARDING -->
+  <div id="onboard">
+    <div>
+      <div class="brand-eyebrow">Бюджет · для двоих</div>
+      <div class="brand-title">Общий кошелёк<br>без лишних вопросов</div>
+      <p class="brand-sub" style="margin-top:10px;">Один код доступа — оба видят одни и те же доходы, расходы и копилку.</p>
+    </div>
+
+    <div class="field">
+      <label for="nameInput">Как вас зовут</label>
+      <input id="nameInput" type="text" placeholder="Например, Аня" maxlength="20">
+    </div>
+
+    <div class="field">
+      <label for="roomInput">Код бюджета</label>
+      <div class="room-row">
+        <input id="roomInput" type="text" placeholder="Введите или создайте код" maxlength="12">
+        <button class="btn-generate" id="genCodeBtn">Создать</button>
+      </div>
+      <p class="onboard-hint">Один человек нажимает <b>«Создать»</b> и отправляет код второму — тот вводит его в это же поле.</p>
+    </div>
+
+    <button class="btn-primary" id="enterBtn">Войти в бюджет</button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main" class="hidden">
+
+    <div class="topbar">
+      <div class="topbar-room">
+        <span class="label">Код бюджета</span>
+        <span class="code" id="roomCodeLabel">—</span>
+      </div>
+      <div class="topbar-people" id="peopleChips"></div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-label">Доступно сейчас</div>
+      <div class="hero-balance" id="balanceLabel">0 <sup>₽</sup></div>
+
+      <div class="jar-wrap">
+        <div class="jar-top">
+          <span class="jar-title">Копилка</span>
+          <button class="jar-goal-edit" id="editGoalBtn">изменить цель</button>
+        </div>
+        <div class="jar-track">
+          <div class="jar-fill-a" id="jarFillA" style="width:0%"></div>
+          <div class="jar-fill-b" id="jarFillB" style="width:0%"></div>
+        </div>
+        <div class="jar-caption">
+          <span id="jarSaved">0 ₽ отложено</span>
+          <span id="jarGoal">цель: 0 ₽</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="action-btn income" id="btnIncome"><span class="icon">＋</span>Доход</div>
+      <div class="action-btn expense" id="btnExpense"><span class="icon">－</span>Расход</div>
+      <div class="action-btn saving" id="btnSaving"><span class="icon">◎</span>В копилку</div>
+    </div>
+
+    <div class="month-nav">
+      <button class="month-nav-btn" id="prevMonthBtn">‹</button>
+      <div class="month-label-wrap">
+        <span class="month-label" id="monthLabel">Июль 2026</span>
+        <button class="month-today-btn hidden" id="todayBtn">к текущему</button>
+      </div>
+      <button class="month-nav-btn" id="nextMonthBtn">›</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card income">
+        <div class="n" id="totalIncome">0 ₽</div>
+        <div class="l">Доход за месяц</div>
+      </div>
+      <div class="stat-card expense">
+        <div class="n" id="totalExpense">0 ₽</div>
+        <div class="l">Расход за месяц</div>
+      </div>
+    </div>
+
+    <div class="ledger-head">
+      <span class="ledger-title">Лента операций</span>
+      <span class="ledger-count" id="entryCount">0 записей</span>
+    </div>
+
+    <div class="ledger" id="ledger">
+      <!-- entries injected here -->
+    </div>
+
+    <p class="footer-note">Данные общие для всех, кто ввёл этот код бюджета.</p>
+  </div>
+</div>
+
+<div id="overlay" class="hidden">
+  <div id="sheet">
+    <div class="sheet-title" id="sheetTitle">Новая операция</div>
+    <div class="amount-input-wrap">
+      <span>₽</span>
+      <input id="amountInput" type="number" inputmode="decimal" placeholder="0">
+    </div>
+    <div class="chip-row" id="categoryChips"></div>
+    <input id="noteInput" type="text" placeholder="Комментарий (необязательно)" maxlength="60">
+    <div class="sheet-actions">
+      <button class="btn-secondary hidden" id="deleteSheet" style="color:var(--coral); border-color:rgba(255,122,107,0.35);">Удалить</button>
+      <button class="btn-secondary" id="cancelSheet">Отмена</button>
+      <button class="btn-primary" id="saveSheet">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.expand(); tg.ready(); }
+
+  const PERSON_COLORS = ['#4FC8D9', '#B48CE8', '#5FD9A4', '#FF7A6B'];
+  const CATEGORIES = {
+    income: ['Зарплата','Подарок','Подработка','Другое'],
+    expense: ['Еда','Транспорт','Жильё','Развлечения','Другое'],
+    saving: ['Отпуск','Подушка','Крупная покупка','Другое']
+  };
+  const TITLES = { income:'Доход', expense:'Расход', saving:'В копилку' };
+  const ICONS = { income:'＋', expense:'－', saving:'◎' };
+
+  let roomCode = null;
+  let myName = null;
+  let currentType = null;
+  let selectedCategory = null;
+  let room = null; // { people:{name:color}, goal:number, transactions:[...] }
+
+  const $ = (id) => document.getElementById(id);
+
+  function fmt(n){
+    return Math.round(n).toLocaleString('ru-RU') + ' ₽';
+  }
+
+  function showToast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 1800);
+  }
+
+  function genCode(){
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let s = '';
+    for (let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+    return s;
+  }
+
+  $('genCodeBtn').addEventListener('click', () => {
+    $('roomInput').value = genCode();
+  });
+
+  async function loadRoom(code){
+    try {
+      const res = await window.storage.get('room:' + code, true);
+      if (res && res.value) return JSON.parse(res.value);
+    } catch(e) { /* not found yet */ }
+    return { people:{}, goal:0, transactions:[] };
+  }
+
+  async function saveRoom(){
+    try {
+      await window.storage.set('room:' + roomCode, JSON.stringify(room), true);
+    } catch(e){
+      showToast('Не удалось сохранить. Попробуйте ещё раз.');
+      console.error(e);
+    }
+  }
+
+  function colorForPerson(name){
+    if (room.people[name]) return room.people[name];
+    const idx = Object.keys(room.people).length % PERSON_COLORS.length;
+    return PERSON_COLORS[idx];
+  }
+
+  async function enterRoom(){
+    const name = $('nameInput').value.trim();
+    const code = $('roomInput').value.trim().toUpperCase();
+    if (!name){ showToast('Введите ваше имя'); return; }
+    if (!code){ showToast('Введите или создайте код'); return; }
+
+    roomCode = code;
+    myName = name;
+    room = await loadRoom(code);
+
+    if (!room.people[myName]){
+      room.people[myName] = colorForPerson(myName);
+      await saveRoom();
+    }
+
+    $('onboard').classList.add('hidden');
+    $('main').classList.remove('hidden');
+    $('roomCodeLabel').textContent = roomCode;
+    renderAll();
+  }
+
+  $('enterBtn').addEventListener('click', enterRoom);
+
+  function renderPeople(){
+    const wrap = $('peopleChips');
+    wrap.innerHTML = '';
+    Object.entries(room.people).forEach(([name, color]) => {
+      const chip = document.createElement('div');
+      chip.className = 'person-chip';
+      chip.innerHTML = `<span class="dot" style="background:${color}"></span>${name}`;
+      wrap.appendChild(chip);
+    });
+  }
+
+  const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const MONTHS_RU_NOM = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+  let selectedMonth = startOfMonth(new Date());
+
+  function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function sameMonth(ts, monthDate){
+    const d = new Date(ts);
+    return d.getFullYear() === monthDate.getFullYear() && d.getMonth() === monthDate.getMonth();
+  }
+  function monthLabel(monthDate){
+    return MONTHS_RU_NOM[monthDate.getMonth()] + ' ' + monthDate.getFullYear();
+  }
+  function isCurrentMonth(monthDate){
+    return sameMonth(Date.now(), monthDate);
+  }
+  function shiftMonth(delta){
+    selectedMonth = new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + delta, 1);
+    renderMonthNav();
+    renderLedger();
+  }
+  function renderMonthNav(){
+    $('monthLabel').textContent = monthLabel(selectedMonth);
+    $('todayBtn').classList.toggle('hidden', isCurrentMonth(selectedMonth));
+    const now = startOfMonth(new Date());
+    $('nextMonthBtn').disabled = selectedMonth.getTime() >= now.getTime();
+  }
+  $('prevMonthBtn').addEventListener('click', () => shiftMonth(-1));
+  $('nextMonthBtn').addEventListener('click', () => shiftMonth(1));
+  $('todayBtn').addEventListener('click', () => {
+    selectedMonth = startOfMonth(new Date());
+    renderMonthNav();
+    renderLedger();
+  });
+
+  function computeMonthlyTotals(monthDate){
+    let income=0, expense=0;
+    room.transactions.forEach(t => {
+      if (!sameMonth(t.ts, monthDate)) return;
+      if (t.type === 'income') income += t.amount;
+      else if (t.type === 'expense') expense += t.amount;
+    });
+    return { income, expense };
+  }
+    let income=0, expense=0, savingByPerson={};
+    room.transactions.forEach(t => {
+      if (t.type === 'income') income += t.amount;
+      else if (t.type === 'expense') expense += t.amount;
+      else if (t.type === 'saving'){
+        savingByPerson[t.person] = (savingByPerson[t.person]||0) + t.amount;
+      }
+    });
+    const totalSaving = Object.values(savingByPerson).reduce((a,b)=>a+b,0);
+    const balance = income - expense - totalSaving;
+    return { income, expense, totalSaving, savingByPerson, balance };
+  }
+
+  function renderHero(){
+    const { totalSaving, savingByPerson, balance } = computeTotals();
+    $('balanceLabel').innerHTML = Math.round(balance).toLocaleString('ru-RU') + ' <sup>₽</sup>';
+
+    const goal = room.goal || 0;
+    const names = Object.keys(room.people);
+    const nameA = names[0], nameB = names[1];
+    const savedA = (nameA && savingByPerson[nameA]) || 0;
+    const savedB = (nameB && savingByPerson[nameB]) || 0;
+    const pctA = goal > 0 ? Math.min(100, (savedA/goal)*100) : (totalSaving>0 ? 50 : 0);
+    const pctB = goal > 0 ? Math.min(100, (savedB/goal)*100) : (totalSaving>0 ? 50 : 0);
+
+    $('jarFillA').style.width = (goal>0 ? pctA : (totalSaving>0? Math.min(100, (savedA/(totalSaving||1))*100):0)) + '%';
+    $('jarFillB').style.width = (goal>0 ? pctB : (totalSaving>0? Math.min(100, (savedB/(totalSaving||1))*100):0)) + '%';
+    $('jarFillA').style.background = room.people[nameA] || 'var(--person-a)';
+    $('jarFillB').style.background = room.people[nameB] || 'var(--person-b)';
+
+    $('jarSaved').textContent = fmt(totalSaving) + ' отложено';
+    $('jarGoal').textContent = goal > 0 ? ('цель: ' + fmt(goal)) : 'цель не задана';
+  }
+
+  function renderStats(){
+    const { income, expense } = computeMonthlyTotals(selectedMonth);
+    $('totalIncome').textContent = fmt(income);
+    $('totalExpense').textContent = fmt(expense);
+  }
+
+  function renderLedger(){
+    const list = room.transactions
+      .filter(t => sameMonth(t.ts, selectedMonth))
+      .sort((a,b)=> b.ts - a.ts);
+    $('entryCount').textContent = list.length + (list.length===1?' запись':(list.length>=2&&list.length<=4?' записи':' записей'));
+    const ledger = $('ledger');
+    renderStats();
+    if (list.length === 0){
+      ledger.innerHTML = `<div class="empty-state">Пусто в этом месяце.<br>Добавьте операцию кнопками выше — она появится здесь для вас обоих.</div>`;
+      return;
+    }
+    ledger.innerHTML = list.map(t => {
+      const color = room.people[t.person] || '#999';
+      const sign = t.type === 'income' ? '+' : '−';
+      const dateStr = new Date(t.ts).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' });
+      return `<div class="entry" data-id="${t.id}">
+        <span class="entry-dot" style="background:${color}"></span>
+        <div class="entry-main">
+          <div class="entry-cat">${escapeHtml(t.category)}${t.note ? ' · ' + escapeHtml(t.note) : ''}</div>
+          <div class="entry-meta">${escapeHtml(t.person)} · ${dateStr}</div>
+        </div>
+        <div class="entry-amount ${t.type}">${sign}${Math.round(t.amount).toLocaleString('ru-RU')} ₽</div>
+        <span class="entry-edit-hint">✎</span>
+      </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderAll(){
+    renderPeople();
+    renderHero();
+    renderMonthNav();
+    renderLedger();
+  }
+
+  // ---- Add / edit transaction sheet ----
+  let editingId = null;
+
+  function openSheet(type, existing){
+    currentType = type;
+    selectedCategory = existing ? existing.category : null;
+    editingId = existing ? existing.id : null;
+
+    $('sheetTitle').textContent = (existing ? 'Изменить: ' : '') + ICONS[type] + ' ' + TITLES[type];
+    $('amountInput').value = existing ? existing.amount : '';
+    $('noteInput').value = existing ? (existing.note || '') : '';
+    $('deleteSheet').classList.toggle('hidden', !existing);
+    $('saveSheet').textContent = existing ? 'Сохранить изменения' : 'Сохранить';
+
+    const chipsWrap = $('categoryChips');
+    chipsWrap.innerHTML = '';
+    CATEGORIES[type].forEach(cat => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = cat;
+      if (existing && existing.category === cat) chip.classList.add('active');
+      chip.addEventListener('click', () => {
+        [...chipsWrap.children].forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedCategory = cat;
+      });
+      chipsWrap.appendChild(chip);
+    });
+
+    // custom category not in preset list (kept from existing entry)
+    if (existing && !CATEGORIES[type].includes(existing.category)){
+      const chip = document.createElement('div');
+      chip.className = 'chip active';
+      chip.textContent = existing.category;
+      chip.addEventListener('click', () => {
+        [...chipsWrap.children].forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        selectedCategory = existing.category;
+      });
+      chipsWrap.insertBefore(chip, chipsWrap.firstChild);
+    }
+
+    $('overlay').classList.remove('hidden');
+    setTimeout(()=> $('amountInput').focus(), 50);
+  }
+
+  function closeSheet(){
+    $('overlay').classList.add('hidden');
+    editingId = null;
+  }
+
+  $('btnIncome').addEventListener('click', () => openSheet('income'));
+  $('btnExpense').addEventListener('click', () => openSheet('expense'));
+  $('btnSaving').addEventListener('click', () => openSheet('saving'));
+  $('cancelSheet').addEventListener('click', closeSheet);
+  $('overlay').addEventListener('click', (e) => { if (e.target.id === 'overlay') closeSheet(); });
+
+  $('ledger').addEventListener('click', (e) => {
+    const entryEl = e.target.closest('.entry');
+    if (!entryEl) return;
+    const id = entryEl.getAttribute('data-id');
+    const t = room.transactions.find(x => x.id === id);
+    if (t) openSheet(t.type, t);
+  });
+
+  $('saveSheet').addEventListener('click', async () => {
+    const amount = parseFloat($('amountInput').value);
+    if (!amount || amount <= 0){ showToast('Введите сумму'); return; }
+    const category = selectedCategory || CATEGORIES[currentType][CATEGORIES[currentType].length-1];
+    const note = $('noteInput').value.trim();
+
+    if (editingId){
+      const t = room.transactions.find(x => x.id === editingId);
+      if (t){
+        t.amount = amount;
+        t.category = category;
+        t.note = note;
+        t.type = currentType;
+      }
+    } else {
+      room.transactions.push({
+        id: Date.now() + '-' + Math.random().toString(36).slice(2,7),
+        type: currentType,
+        amount: amount,
+        category: category,
+        note: note,
+        person: myName,
+        ts: Date.now()
+      });
+      selectedMonth = startOfMonth(new Date());
+    }
+
+    closeSheet();
+    renderAll();
+    await saveRoom();
+    showToast(editingId ? 'Изменения сохранены' : 'Сохранено');
+  });
+
+  $('deleteSheet').addEventListener('click', async () => {
+    if (!editingId) return;
+    if (!confirm('Удалить эту запись?')) return;
+    room.transactions = room.transactions.filter(x => x.id !== editingId);
+    closeSheet();
+    renderAll();
+    await saveRoom();
+    showToast('Запись удалена');
+  });
+
+  $('editGoalBtn').addEventListener('click', async () => {
+    const current = room.goal || 0;
+    const input = prompt('Цель копилки, ₽', current || '');
+    if (input === null) return;
+    const val = parseFloat(input);
+    if (isNaN(val) || val < 0){ showToast('Введите корректное число'); return; }
+    room.goal = val;
+    renderHero();
+    await saveRoom();
+    showToast('Цель обновлена');
+  });
+
+  // Prefill name from Telegram if available
+  if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name){
+    $('nameInput').value = tg.initDataUnsafe.user.first_name;
+  }
+
+  // Try to restore last used room/name for convenience (personal, not shared)
+  (async () => {
+    try {
+      const last = await window.storage.get('last-session', false);
+      if (last && last.value){
+        const data = JSON.parse(last.value);
+        if (data.name) $('nameInput').value = data.name;
+        if (data.room) $('roomInput').value = data.room;
+      }
+    } catch(e){ /* no previous session */ }
+  })();
+
+  const origEnter = enterRoom;
+  $('enterBtn').removeEventListener('click', enterRoom);
+  $('enterBtn').addEventListener('click', async () => {
+    await origEnter();
+    if (roomCode && myName){
+      try { await window.storage.set('last-session', JSON.stringify({ name: myName, room: roomCode }), false); }
+      catch(e){}
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
